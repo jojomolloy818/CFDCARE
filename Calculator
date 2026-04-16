@@ -1,0 +1,230 @@
+import React, { useMemo, useState } from "react";
+
+const FOOD_GROUPS = ["Starch", "Protein", "Veg", "Fruit", "Dairy", "Fat"];
+const MEALS = ["Breakfast", "AM Snack", "Lunch", "PM Snack", "Dinner", "HS Snack"];
+const KCAL_AVG = {
+  Starch: 100,
+  Protein: 65,
+  Veg: 25,
+  Fruit: 60,
+  Dairy: 110,
+  Fat: 75,
+  Unassigned: 70,
+};
+
+const MEAL_PLAN_BREAKDOWNS = [
+  { Starch: 5, Protein: 5, Veg: 2, Fruit: 2, Dairy: 1, Fat: 4 },
+  { Starch: 6, Protein: 5, Veg: 2, Fruit: 2, Dairy: 2, Fat: 4 },
+  { Starch: 6, Protein: 5, Veg: 2, Fruit: 3, Dairy: 2, Fat: 5 },
+  { Starch: 7, Protein: 6, Veg: 2, Fruit: 3, Dairy: 2, Fat: 6 },
+  { Starch: 9, Protein: 7, Veg: 2, Fruit: 3, Dairy: 3, Fat: 6 },
+  { Starch: 10, Protein: 8, Veg: 2, Fruit: 3, Dairy: 3, Fat: 7 },
+  { Starch: 12, Protein: 8, Veg: 2, Fruit: 3, Dairy: 3, Fat: 8 },
+  { Starch: 13, Protein: 9, Veg: 2, Fruit: 3, Dairy: 3, Fat: 8 },
+  { Starch: 14, Protein: 10, Veg: 2, Fruit: 3, Dairy: 3, Fat: 10 },
+  { Starch: 15, Protein: 10, Veg: 2, Fruit: 4, Dairy: 3, Fat: 10 },
+  { Starch: 16, Protein: 10, Veg: 3, Fruit: 4, Dairy: 4, Fat: 10 },
+  { Starch: 18, Protein: 10, Veg: 3, Fruit: 4, Dairy: 4, Fat: 11 },
+  { Starch: 18, Protein: 12, Veg: 3, Fruit: 4, Dairy: 4, Fat: 11 },
+  { Starch: 22, Protein: 13, Veg: 5, Fruit: 5, Dairy: 4, Fat: 11 },
+  { Starch: 26, Protein: 13, Veg: 5, Fruit: 6, Dairy: 4, Fat: 14 },
+].map((row) => ({
+  ...row,
+  totalKcal: FOOD_GROUPS.reduce((sum, group) => sum + row[group] * KCAL_AVG[group], 0),
+}));
+
+const CARE_PLAN_LOOKUP = [
+  {
+    Breakfast: { Starch: 1, Protein: 1, Veg: 0, Fruit: 1, Dairy: 0, Fat: 1 },
+    "AM Snack": { Starch: 0, Protein: 1, Veg: 0, Fruit: 0, Dairy: 0, Fat: 1 },
+    Lunch: { Starch: 1, Protein: 1, Veg: 1, Fruit: 1, Dairy: 0, Fat: 1 },
+    "PM Snack": { Starch: 1, Protein: 1, Veg: 0, Fruit: 0, Dairy: 0, Fat: 0 },
+    Dinner: { Starch: 1, Protein: 1, Veg: 1, Fruit: 0, Dairy: 0, Fat: 1 },
+    "HS Snack": { Starch: 1, Protein: 0, Veg: 0, Fruit: 0, Dairy: 1, Fat: 0 },
+  },
+  {
+    Breakfast: { Starch: 1, Protein: 1, Veg: 0, Fruit: 1, Dairy: 0, Fat: 1 },
+    "AM Snack": { Starch: 1, Protein: 0, Veg: 0, Fruit: 0, Dairy: 0, Fat: 1 },
+    Lunch: { Starch: 1, Protein: 2, Veg: 1, Fruit: 0, Dairy: 0, Fat: 1 },
+    "PM Snack": { Starch: 1, Protein: 0, Veg: 0, Fruit: 0, Dairy: 1, Fat: 0 },
+    Dinner: { Starch: 1, Protein: 2, Veg: 1, Fruit: 1, Dairy: 0, Fat: 1 },
+    "HS Snack": { Starch: 1, Protein: 0, Veg: 0, Fruit: 0, Dairy: 1, Fat: 0 },
+  },
+  {
+    Breakfast: { Starch: 1, Protein: 1, Veg: 0, Fruit: 1, Dairy: 1, Fat: 1 },
+    "AM Snack": { Starch: 1, Protein: 0, Veg: 0, Fruit: 0, Dairy: 0, Fat: 1 },
+    Lunch: { Starch: 1, Protein: 2, Veg: 1, Fruit: 1, Dairy: 0, Fat: 1 },
+    "PM Snack": { Starch: 1, Protein: 0, Veg: 0, Fruit: 0, Dairy: 0, Fat: 1 },
+    Dinner: { Starch: 1, Protein: 2, Veg: 1, Fruit: 1, Dairy: 0, Fat: 1 },
+    "HS Snack": { Starch: 1, Protein: 0, Veg: 0, Fruit: 0, Dairy: 1, Fat: 0 },
+  },
+  {
+    Breakfast: { Starch: 2, Protein: 1, Veg: 0, Fruit: 1, Dairy: 0, Fat: 1 },
+    "AM Snack": { Starch: 1, Protein: 1, Veg: 0, Fruit: 0, Dairy: 0, Fat: 1 },
+    Lunch: { Starch: 1, Protein: 2, Veg: 1, Fruit: 1, Dairy: 0, Fat: 1 },
+    "PM Snack": { Starch: 1, Protein: 0, Veg: 0, Fruit: 0, Dairy: 1, Fat: 1 },
+    Dinner: { Starch: 1, Protein: 2, Veg: 1, Fruit: 1, Dairy: 0, Fat: 1 },
+    "HS Snack": { Starch: 1, Protein: 0, Veg: 0, Fruit: 0, Dairy: 1, Fat: 1 },
+  },
+  {
+    Breakfast: { Starch: 2, Protein: 1, Veg: 0, Fruit: 1, Dairy: 1, Fat: 1 },
+    "AM Snack": { Starch: 1, Protein: 1, Veg: 0, Fruit: 0, Dairy: 0, Fat: 1 },
+    Lunch: { Starch: 2, Protein: 2, Veg: 1, Fruit: 1, Dairy: 0, Fat: 1 },
+    "PM Snack": { Starch: 1, Protein: 0, Veg: 0, Fruit: 0, Dairy: 1, Fat: 1 },
+    Dinner: { Starch: 2, Protein: 3, Veg: 1, Fruit: 1, Dairy: 0, Fat: 1 },
+    "HS Snack": { Starch: 1, Protein: 0, Veg: 0, Fruit: 0, Dairy: 1, Fat: 1 },
+  },
+  {
+    Breakfast: { Starch: 3, Protein: 1, Veg: 0, Fruit: 1, Dairy: 1, Fat: 1 },
+    "AM Snack": { Starch: 1, Protein: 1, Veg: 0, Fruit: 0, Dairy: 0, Fat: 1 },
+    Lunch: { Starch: 2, Protein: 3, Veg: 1, Fruit: 1, Dairy: 0, Fat: 1 },
+    "PM Snack": { Starch: 1, Protein: 0, Veg: 0, Fruit: 0, Dairy: 1, Fat: 1 },
+    Dinner: { Starch: 2, Protein: 3, Veg: 1, Fruit: 1, Dairy: 0, Fat: 2 },
+    "HS Snack": { Starch: 1, Protein: 0, Veg: 0, Fruit: 0, Dairy: 1, Fat: 1 },
+  },
+  {
+    Breakfast: { Starch: 3, Protein: 1, Veg: 0, Fruit: 1, Dairy: 1, Fat: 2 },
+    "AM Snack": { Starch: 1, Protein: 1, Veg: 0, Fruit: 0, Dairy: 0, Fat: 1 },
+    Lunch: { Starch: 3, Protein: 2, Veg: 1, Fruit: 1, Dairy: 0, Fat: 2 },
+    "PM Snack": { Starch: 1, Protein: 1, Veg: 0, Fruit: 0, Dairy: 1, Fat: 0 },
+    Dinner: { Starch: 3, Protein: 3, Veg: 1, Fruit: 1, Dairy: 0, Fat: 2 },
+    "HS Snack": { Starch: 1, Protein: 0, Veg: 0, Fruit: 0, Dairy: 1, Fat: 1 },
+  },
+  {
+    Breakfast: { Starch: 4, Protein: 1, Veg: 0, Fruit: 1, Dairy: 1, Fat: 2 },
+    "AM Snack": { Starch: 1, Protein: 1, Veg: 0, Fruit: 0, Dairy: 0, Fat: 1 },
+    Lunch: { Starch: 3, Protein: 3, Veg: 1, Fruit: 1, Dairy: 0, Fat: 2 },
+    "PM Snack": { Starch: 1, Protein: 1, Veg: 0, Fruit: 0, Dairy: 1, Fat: 0 },
+    Dinner: { Starch: 3, Protein: 3, Veg: 1, Fruit: 1, Dairy: 0, Fat: 2 },
+    "HS Snack": { Starch: 1, Protein: 0, Veg: 0, Fruit: 0, Dairy: 1, Fat: 1 },
+  },
+  {
+    Breakfast: { Starch: 4, Protein: 2, Veg: 0, Fruit: 1, Dairy: 1, Fat: 2 },
+    "AM Snack": { Starch: 1, Protein: 1, Veg: 0, Fruit: 0, Dairy: 0, Fat: 1 },
+    Lunch: { Starch: 4, Protein: 3, Veg: 1, Fruit: 1, Dairy: 0, Fat: 3 },
+    "PM Snack": { Starch: 0, Protein: 1, Veg: 0, Fruit: 0, Dairy: 1, Fat: 1 },
+    Dinner: { Starch: 4, Protein: 3, Veg: 1, Fruit: 1, Dairy: 0, Fat: 2 },
+    "HS Snack": { Starch: 1, Protein: 0, Veg: 0, Fruit: 0, Dairy: 1, Fat: 1 },
+  },
+  {
+    Breakfast: { Starch: 4, Protein: 2, Veg: 0, Fruit: 1, Dairy: 1, Fat: 2 },
+    "AM Snack": { Starch: 1, Protein: 1, Veg: 0, Fruit: 0, Dairy: 0, Fat: 1 },
+    Lunch: { Starch: 4, Protein: 3, Veg: 1, Fruit: 1, Dairy: 0, Fat: 3 },
+    "PM Snack": { Starch: 1, Protein: 1, Veg: 0, Fruit: 0, Dairy: 1, Fat: 0 },
+    Dinner: { Starch: 4, Protein: 3, Veg: 1, Fruit: 2, Dairy: 0, Fat: 3 },
+    "HS Snack": { Starch: 1, Protein: 0, Veg: 0, Fruit: 0, Dairy: 1, Fat: 1 },
+  },
+  {
+    Breakfast: { Starch: 4, Protein: 2, Veg: 0, Fruit: 1, Dairy: 2, Fat: 2 },
+    "AM Snack": { Starch: 1, Protein: 1, Veg: 0, Fruit: 0, Dairy: 0, Fat: 1 },
+    Lunch: { Starch: 4, Protein: 3, Veg: 2, Fruit: 2, Dairy: 0, Fat: 2 },
+    "PM Snack": { Starch: 1, Protein: 1, Veg: 0, Fruit: 0, Dairy: 1, Fat: 0 },
+    Dinner: { Starch: 5, Protein: 3, Veg: 1, Fruit: 1, Dairy: 0, Fat: 4 },
+    "HS Snack": { Starch: 1, Protein: 0, Veg: 0, Fruit: 0, Dairy: 1, Fat: 1 },
+  },
+  {
+    Breakfast: { Starch: 4, Protein: 2, Veg: 0, Fruit: 2, Dairy: 2, Fat: 2 },
+    "AM Snack": { Starch: 1, Protein: 1, Veg: 0, Fruit: 0, Dairy: 0, Fat: 1 },
+    Lunch: { Starch: 5, Protein: 3, Veg: 2, Fruit: 1, Dairy: 0, Fat: 3 },
+    "PM Snack": { Starch: 1, Protein: 1, Veg: 0, Fruit: 0, Dairy: 1, Fat: 0 },
+    Dinner: { Starch: 6, Protein: 3, Veg: 1, Fruit: 1, Dairy: 0, Fat: 4 },
+    "HS Snack": { Starch: 1, Protein: 0, Veg: 0, Fruit: 0, Dairy: 1, Fat: 1 },
+  },
+  {
+    Breakfast: { Starch: 5, Protein: 2, Veg: 0, Fruit: 2, Dairy: 2, Fat: 2 },
+    "AM Snack": { Starch: 1, Protein: 1, Veg: 0, Fruit: 0, Dairy: 0, Fat: 1 },
+    Lunch: { Starch: 5, Protein: 4, Veg: 2, Fruit: 1, Dairy: 0, Fat: 3 },
+    "PM Snack": { Starch: 0, Protein: 1, Veg: 0, Fruit: 0, Dairy: 1, Fat: 1 },
+    Dinner: { Starch: 6, Protein: 4, Veg: 1, Fruit: 1, Dairy: 0, Fat: 3 },
+    "HS Snack": { Starch: 1, Protein: 0, Veg: 0, Fruit: 0, Dairy: 1, Fat: 1 },
+  },
+  {
+    Breakfast: { Starch: 6, Protein: 3, Veg: 0, Fruit: 2, Dairy: 2, Fat: 2 },
+    "AM Snack": { Starch: 2, Protein: 1, Veg: 0, Fruit: 0, Dairy: 0, Fat: 0 },
+    Lunch: { Starch: 6, Protein: 4, Veg: 2, Fruit: 1, Dairy: 0, Fat: 5 },
+    "PM Snack": { Starch: 1, Protein: 1, Veg: 0, Fruit: 0, Dairy: 1, Fat: 0 },
+    Dinner: { Starch: 6, Protein: 4, Veg: 3, Fruit: 2, Dairy: 0, Fat: 3 },
+    "HS Snack": { Starch: 1, Protein: 0, Veg: 0, Fruit: 0, Dairy: 1, Fat: 1 },
+  },
+  {
+    Breakfast: { Starch: 8, Protein: 3, Veg: 0, Fruit: 2, Dairy: 2, Fat: 3 },
+    "AM Snack": { Starch: 1, Protein: 1, Veg: 0, Fruit: 1, Dairy: 0, Fat: 0 },
+    Lunch: { Starch: 7, Protein: 4, Veg: 2, Fruit: 1, Dairy: 0, Fat: 7 },
+    "PM Snack": { Starch: 0, Protein: 1, Veg: 0, Fruit: 1, Dairy: 1, Fat: 0 },
+    Dinner: { Starch: 9, Protein: 4, Veg: 3, Fruit: 1, Dairy: 0, Fat: 3 },
+    "HS Snack": { Starch: 1, Protein: 0, Veg: 0, Fruit: 0, Dairy: 1, Fat: 1 },
+  },
+];
+
+const SUPPLEMENT_KCAL_PER_UNIT = {
+  "Boost/Ensure Plus": 45,
+  "Kate Farms": 45,
+  "Clif Bar": 250,
+  "Med Plus 2.0": 55,
+};
+
+function toNumber(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function format(value, digits = 0) {
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(value);
+}
+
+function buildFoodGroupTotals(carePlan) {
+  return FOOD_GROUPS.reduce((acc, group) => {
+    acc[group] = MEALS.reduce((sum, meal) => sum + carePlan[meal][group], 0);
+    return acc;
+  }, {});
+}
+
+export default function Page() {
+  const [weightLbs, setWeightLbs] = useState(109);
+  const [bmrEer, setBmrEer] = useState(1710);
+  const [kcalKg, setKcalKg] = useState(45);
+  const [supplements, setSupplements] = useState({
+    "Boost/Ensure Plus": 0,
+    "Kate Farms": 0,
+    "Clif Bar": 0,
+    "Med Plus 2.0": 0,
+  });
+
+  const weightKg = useMemo(() => {
+    if (!weightLbs) return 0;
+    return Math.round((toNumber(weightLbs) / 2.2) * 10) / 10;
+  }, [weightLbs]);
+
+  const wtBasedKcal = useMemo(() => {
+    if (!weightKg || !kcalKg) return 0;
+    return Math.round(weightKg * toNumber(kcalKg));
+  }, [weightKg, kcalKg]);
+
+  const targetKcal = Math.max(toNumber(bmrEer), wtBasedKcal);
+
+  const matched = useMemo(() => {
+    return MEAL_PLAN_BREAKDOWNS.map((plan, index) => ({
+      ...plan,
+      index,
+      delta: Math.abs(plan.totalKcal - targetKcal),
+      carePlan: CARE_PLAN_LOOKUP[index],
+    })).sort((a, b) => a.delta - b.delta)[0];
+  }, [targetKcal]);
+
+  const foodGroupTotals = useMemo(() => buildFoodGroupTotals(matched.carePlan), [matched]);
+
+  const mealRows = useMemo(() => {
+    return MEALS.map((meal) => {
+      const row = matched.carePlan[meal];
+      const mealServings = FOOD_GROUPS.reduce((sum, group) => sum + row[group], 0);
+      const kcalMeal = FOOD_GROUPS.reduce((sum, group) => sum + row[group] * KCAL_AVG[group], 0);
+      return { meal, ...row, mealServings, kcalMeal };
+    });
+  }, [matched]);
+
+  const mealPlanKcal = FOOD_GROUPS.reduce((sum, group) => sum + matched[group] * KCAL_AVG[group], 0);
+  const carePlanKcal = FOOD_GROUPS.reduce((sum, group) => sum + foodGroupTotals[group] * KCAL_AVG[group], 0);
+  const varianceToTarget = matched
